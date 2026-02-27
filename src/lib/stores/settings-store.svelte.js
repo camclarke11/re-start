@@ -78,6 +78,7 @@ let defaultSettings = {
         { title: 'feedly', url: 'https://feedly.com', icon: 'feedly' },
     ],
     customThemeColors: { ...defaultCustomColors },
+    pingUrl: 'https://www.google.com/generate_204',
     customCSS: '',
     showClock: true,
     showStats: true,

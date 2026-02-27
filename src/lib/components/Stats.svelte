@@ -1,5 +1,6 @@
 <script>
     import { onMount, onDestroy } from 'svelte'
+    import { settings } from '../stores/settings-store.svelte.js'
 
     let { class: className = '' } = $props()
 
@@ -53,10 +54,15 @@
     }
 
     async function measurePing() {
+        if (!settings.pingUrl) {
+            latency = null
+            return
+        }
+
         const start = performance.now()
 
         try {
-            await fetch('https://www.google.com/generate_204', {
+            await fetch(settings.pingUrl, {
                 method: 'GET',
                 mode: 'no-cors',
                 cache: 'no-cache',
@@ -104,7 +110,7 @@
     <div class="panel-label">stats</div>
     <div class="panel">
         <div>load <span class="bright">{loadTime} ms</span></div>
-        <div>ping <span class="bright">{latency || '?'} ms</span></div>
+        <div>ping <span class="bright">{settings.pingUrl ? (latency || '?') + ' ms' : '-'}</span></div>
         <div>fps <span class="bright">{fps}</span></div>
         <div>
             <span class="bright">{viewportWidth}</span> x

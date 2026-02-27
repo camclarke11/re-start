@@ -360,13 +360,15 @@
                                     type="color"
                                     id="color-{key}"
                                     value={settings.customThemeColors[key]}
-                                    oninput={(e) => setCustomColor(key, e.target.value)}
+                                    oninput={(e) =>
+                                        setCustomColor(key, e.target.value)}
                                 />
                                 <label for="color-{key}">{label}</label>
                                 <input
                                     type="text"
                                     value={settings.customThemeColors[key]}
-                                    oninput={(e) => setCustomColor(key, e.target.value)}
+                                    oninput={(e) =>
+                                        setCustomColor(key, e.target.value)}
                                     class="color-text"
                                 />
                             </div>
@@ -521,7 +523,10 @@
                         disabled={locationLoading}
                     >
                         <span class="bracket">[</span><span class="action-text"
-                            >{locationError || (locationLoading ? 'getting location...' : 'use current location')}</span
+                            >{locationError ||
+                                (locationLoading
+                                    ? 'getting location...'
+                                    : 'use current location')}</span
                         ><span class="bracket">]</span>
                     </button>
                 </div>
@@ -708,6 +713,15 @@
                         role="none"
                     ></div>
                 </div>
+            </div>
+            <div class="group">
+                <label for="ping-url">ping stats url</label>
+                <input
+                    id="ping-url"
+                    type="text"
+                    bind:value={settings.pingUrl}
+                    placeholder="https://www.google.com/generate_204"
+                />
             </div>
             <div class="group">
                 <label for="custom-css">custom css</label>
