@@ -1,9 +1,9 @@
 <script>
-    let { checked = $bindable(false), children } = $props()
+    let { checked = $bindable(false), children, onchange = undefined } = $props()
 </script>
 
 <label>
-    <input type="checkbox" bind:checked />
+    <input type="checkbox" bind:checked onchange={onchange} />
     <span class="checkbox-indicator">
         {#if checked}
             [<span class="checkbox-x">x</span>]

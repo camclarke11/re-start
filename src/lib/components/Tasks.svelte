@@ -22,7 +22,26 @@
     let initialLoad = $state(true)
     let previousToken = $state(null)
     let previousBackend = $state(null)
-    let taskCount = $derived(tasks.filter((task) => !task.checked).length)
+    let filteredTasks = $derived.by(() => {
+        if (settings.taskBackend !== 'todoist') {
+            return tasks
+        }
+
+        if (settings.todoistVisibleProjectIds === null) {
+            return tasks
+        }
+
+        const visibleProjectIds = new Set(
+            (settings.todoistVisibleProjectIds || []).map((id) => String(id))
+        )
+
+        return tasks.filter((task) =>
+            visibleProjectIds.has(String(task.project_id))
+        )
+    })
+    let taskCount = $derived(
+        filteredTasks.filter((task) => !task.checked).length
+    )
     let taskLabel = $derived(taskCount === 1 ? 'task' : 'tasks')
     let backendUrl = $derived.by(() => {
         if (settings.taskBackend === 'todoist')
@@ -209,6 +228,17 @@
                     id: p.id,
                     name: p.name,
                 }))
+
+                // Remove project IDs that no longer exist.
+                if (Array.isArray(settings.todoistVisibleProjectIds)) {
+                    const validProjectIds = new Set(
+                        availableProjects.map((project) => String(project.id))
+                    )
+                    settings.todoistVisibleProjectIds =
+                        settings.todoistVisibleProjectIds.filter((id) =>
+                            validProjectIds.has(String(id))
+                        )
+                }
             } else if (settings.taskBackend === 'google-tasks') {
                 availableProjects = (api.data?.tasklists || []).map((tl) => ({
                     id: tl.id,
@@ -432,7 +462,7 @@
                     {parsedProject}
                     disabled={addingTask}
                     loading={addingTask}
-                    show={tasks.length === 0}
+                    show={filteredTasks.length === 0}
                     onsubmit={addTask}
                 />
             </div>
@@ -440,7 +470,7 @@
             <br />
             <div class="tasks">
                 <div class="tasks-list">
-                    {#each tasks as task}
+                    {#each filteredTasks as task}
                         <div class="task" class:completed={task.checked}>
                             <button
                                 onclick={() =>

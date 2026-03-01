@@ -27,6 +27,7 @@ let defaultSettings = {
     tabTitle: '~',
     taskBackend: 'local',
     todoistApiToken: '',
+    todoistVisibleProjectIds: null,
     googleTasksSignedIn: false,
     locationMode: 'manual',
     latitude: null,

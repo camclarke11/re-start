@@ -30,6 +30,10 @@
     let googleTasksApi = $state(null)
     let signingIn = $state(false)
     let signInError = $state('')
+    let todoistProjects = $state([])
+    let todoistProjectsLoading = $state(false)
+    let todoistProjectsError = $state('')
+    let todoistProjectsRequestId = 0
 
     function googleSignInLabel() {
         if (settings.googleTasksSignedIn) return 'sign out'
@@ -73,6 +77,119 @@
             console.error('google sign out failed:', err)
         }
     }
+
+    async function loadTodoistProjects(token) {
+        const trimmedToken = token?.trim()
+        if (!trimmedToken) {
+            todoistProjectsRequestId++
+            todoistProjects = []
+            todoistProjectsLoading = false
+            todoistProjectsError = ''
+            return
+        }
+
+        const requestId = ++todoistProjectsRequestId
+        todoistProjectsLoading = true
+        todoistProjectsError = ''
+
+        try {
+            const formData = new FormData()
+            formData.append('sync_token', '*')
+            formData.append('resource_types', JSON.stringify(['projects']))
+
+            const response = await fetch('https://api.todoist.com/api/v1/sync', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${trimmedToken}`,
+                },
+                body: formData,
+            })
+
+            if (!response.ok) {
+                throw new Error(`todoist projects fetch failed: ${response.status}`)
+            }
+
+            const data = await response.json()
+
+            if (requestId !== todoistProjectsRequestId) return
+
+            todoistProjects = (data.projects || [])
+                .filter((project) => !project.is_deleted)
+                .map((project) => ({
+                    id: project.id,
+                    name: project.name,
+                    childOrder: project.child_order ?? 0,
+                }))
+                .sort((a, b) => a.childOrder - b.childOrder)
+                .map(({ id, name }) => ({ id, name }))
+
+            if (Array.isArray(settings.todoistVisibleProjectIds)) {
+                const validProjectIds = new Set(
+                    todoistProjects.map((project) => String(project.id))
+                )
+                settings.todoistVisibleProjectIds =
+                    settings.todoistVisibleProjectIds.filter((id) =>
+                        validProjectIds.has(String(id))
+                    )
+            }
+        } catch (err) {
+            if (requestId !== todoistProjectsRequestId) return
+            todoistProjects = []
+            todoistProjectsError = 'failed to load projects'
+            console.error('todoist projects sync failed:', err)
+        } finally {
+            if (requestId === todoistProjectsRequestId) {
+                todoistProjectsLoading = false
+            }
+        }
+    }
+
+    function isTodoistProjectSelected(projectId) {
+        if (settings.todoistVisibleProjectIds === null) return true
+        const id = String(projectId)
+        return (settings.todoistVisibleProjectIds || []).some(
+            (selectedId) => String(selectedId) === id
+        )
+    }
+
+    function setTodoistProjectVisibility(projectId, visible) {
+        const id = String(projectId)
+        const allProjectIds = todoistProjects.map((project) =>
+            String(project.id)
+        )
+        const currentProjectIds =
+            settings.todoistVisibleProjectIds === null
+                ? allProjectIds
+                : (settings.todoistVisibleProjectIds || []).map((selectedId) =>
+                      String(selectedId)
+                  )
+
+        const nextProjectIds = new Set(currentProjectIds)
+        if (visible) {
+            nextProjectIds.add(id)
+        } else {
+            nextProjectIds.delete(id)
+        }
+
+        settings.todoistVisibleProjectIds = Array.from(nextProjectIds)
+    }
+
+    $effect(() => {
+        const shouldLoadTodoistProjects =
+            showSettings &&
+            settings.taskBackend === 'todoist' &&
+            Boolean(settings.todoistApiToken?.trim())
+
+        if (!shouldLoadTodoistProjects) {
+            todoistProjectsRequestId++
+            todoistProjects = []
+            todoistProjectsLoading = false
+            todoistProjectsError = ''
+            return
+        }
+
+        loadTodoistProjects(settings.todoistApiToken)
+    })
 
     let iconPickerOpen = $state(null)
     let iconPickerRef = $state(null)
@@ -456,6 +573,64 @@
                         bind:value={settings.todoistApiToken}
                     />
                 </div>
+
+                {#if settings.todoistApiToken?.trim()}
+                    <div class="group">
+                        <div class="setting-label">todoist projects</div>
+                        <div class="todoist-project-actions">
+                            <button
+                                class="button"
+                                onclick={() =>
+                                    (settings.todoistVisibleProjectIds = null)}
+                            >
+                                [show all]
+                            </button>
+                            <button
+                                class="button"
+                                onclick={() =>
+                                    (settings.todoistVisibleProjectIds = [])}
+                            >
+                                [show none]
+                            </button>
+                            <button
+                                class="button"
+                                onclick={() =>
+                                    loadTodoistProjects(
+                                        settings.todoistApiToken
+                                    )}
+                                disabled={todoistProjectsLoading}
+                            >
+                                [refresh]
+                            </button>
+                        </div>
+                        {#if todoistProjectsLoading}
+                            <div class="helper-text">loading projects...</div>
+                        {:else if todoistProjectsError}
+                            <div class="helper-text">
+                                {todoistProjectsError}
+                            </div>
+                        {:else if todoistProjects.length === 0}
+                            <div class="helper-text">no projects found</div>
+                        {:else}
+                            <div class="todoist-project-list">
+                                {#each todoistProjects as project}
+                                    <Checkbox
+                                        checked={isTodoistProjectSelected(
+                                            project.id
+                                        )}
+                                        onchange={(event) =>
+                                            setTodoistProjectVisibility(
+                                                project.id,
+                                                event.target.checked
+                                            )}
+                                    >
+                                        {project.name}
+                                    </Checkbox>
+                                {/each}
+                            </div>
+                        {/if}
+                    </div>
+                {/if}
             {/if}
 
             {#if settings.taskBackend === 'google-tasks'}
@@ -952,6 +1127,22 @@
         display: flex;
         gap: 1rem;
         margin-bottom: 1rem;
+    }
+    .todoist-project-actions {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    .todoist-project-list {
+        display: grid;
+        gap: 0.25rem;
+        max-height: 12rem;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--bg-3) var(--bg-1);
+    }
+    .helper-text {
+        color: var(--txt-3);
     }
     .bracket {
         color: var(--txt-3);
