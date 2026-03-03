@@ -11,6 +11,7 @@
     import Clock from './lib/components/Clock.svelte'
     import Calendar from './lib/components/Calendar.svelte'
     import Links from './lib/components/Links.svelte'
+    import CommandLauncher from './lib/components/CommandLauncher.svelte'
     import Settings from './lib/components/Settings.svelte'
     import Stats from './lib/components/Stats.svelte'
     import Tasks from './lib/components/Tasks.svelte'
@@ -74,6 +75,10 @@
 
     function closeSettings() {
         showSettings = false
+    }
+
+    function openSettings() {
+        showSettings = true
     }
 
     onMount(() => {
@@ -146,6 +151,10 @@
 </script>
 
 <main>
+    <div class="command-row">
+        <CommandLauncher />
+    </div>
+
     <div class="container" class:ready={appReady}>
         {#if settings.showClock || settings.showStats}
             <div class="top">
@@ -161,7 +170,9 @@
             <div class="widgets">
                 {#each orderedVisibleWidgets as widgetId (widgetId)}
                     {@const WidgetComponent = widgetComponents[widgetId]}
-                    <WidgetComponent />
+                    <div class="widget-slot" class:tasks-wide={widgetId === 'tasks'}>
+                        <WidgetComponent />
+                    </div>
                 {/each}
             </div>
         {/if}
@@ -175,7 +186,7 @@
     <button
         class="settings-btn"
         class:needs-config={needsConfiguration}
-        onclick={() => (showSettings = true)}
+        onclick={openSettings}
         aria-label="Open settings"
     >
         settings
@@ -186,23 +197,48 @@
 
 <style>
     main {
+        position: relative;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
         min-height: 100vh;
-        justify-content: center;
+        justify-content: flex-start;
         align-items: center;
-        padding: 2rem 1rem;
+        width: min(84rem, calc(100vw - 2rem));
+        margin: 0 auto;
+        padding: 1rem 1rem 2rem;
+        isolation: isolate;
+    }
+    .command-row {
+        width: 100%;
+        margin-bottom: 1rem;
+        z-index: 1;
     }
     .container {
+        position: relative;
+        z-index: 1;
         display: flex;
         flex-direction: column;
+        width: 100%;
         gap: 1.5rem;
         opacity: 0;
     }
     .top,
     .widgets {
         display: flex;
+        width: 100%;
         gap: 1.5rem;
+    }
+    .widget-slot {
+        flex: 1 1 0;
+        min-width: 0;
+        display: flex;
+    }
+    .widget-slot.tasks-wide {
+        flex: 1.4 1 0;
+    }
+    .links {
+        width: 100%;
     }
     .top,
     .links {
@@ -237,6 +273,11 @@
         transition-delay: 110ms;
     }
     .widgets :global(.panel-wrapper) {
+        flex: 1 1 auto;
+        min-width: 0;
+        width: 100%;
+    }
+    .top :global(.panel-wrapper) {
         flex: 1 1 0;
         min-width: 0;
     }
@@ -269,6 +310,16 @@
             opacity: 1;
             transform: none;
             transition: none;
+        }
+    }
+
+    @media (max-width: 720px) {
+        main {
+            width: calc(100vw - 1rem);
+            padding-top: 0.75rem;
+        }
+        .command-row {
+            margin-bottom: 0.75rem;
         }
     }
 </style>

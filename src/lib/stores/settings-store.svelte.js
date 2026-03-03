@@ -110,6 +110,7 @@ let defaultSettings = {
     pingUrl: 'https://www.google.com/generate_204',
     customCSS: '',
     showClock: true,
+    showMotivationalQuote: true,
     showStats: true,
     showWeather: true,
     showTasks: true,

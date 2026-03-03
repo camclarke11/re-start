@@ -1,11 +1,11 @@
 <script>
-    let { group = $bindable(), value, children } = $props()
+    let { group = $bindable(), value, children, onchange = undefined } = $props()
 
     let isChecked = $derived(group === value)
 </script>
 
 <label>
-    <input type="radio" bind:group {value} />
+    <input type="radio" bind:group {value} onchange={onchange} />
     <span class="radio-indicator">
         {#if isChecked}
             [<span class="radio-x">x</span>]

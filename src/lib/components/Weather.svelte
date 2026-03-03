@@ -17,7 +17,6 @@
     let radarError = $state('')
     let radarPeakProbability = $state(0)
     let radarTotalPrecipitation = $state('0.0')
-    let radarNextRainLabel = $state('none')
 
     const weatherAPI = new WeatherAPI()
     const radarApiUrl = 'https://api.open-meteo.com/v1/forecast'
@@ -155,7 +154,6 @@
         if (points.length === 0) {
             radarPeakProbability = 0
             radarTotalPrecipitation = '0.0'
-            radarNextRainLabel = 'none'
             return
         }
 
@@ -167,11 +165,6 @@
         radarTotalPrecipitation = points
             .reduce((sum, point) => sum + point.precipitation, 0)
             .toFixed(1)
-
-        const nextRainPoint = points.find(
-            (point) => point.precipitation >= 0.1 || point.probability >= 35
-        )
-        radarNextRainLabel = nextRainPoint ? nextRainPoint.label : 'none'
     }
 
     function processRadarData(minutely) {
@@ -501,9 +494,6 @@
                         >
                     </div>
                     <div>
-                        next <span class="bright">{radarNextRainLabel}</span>
-                    </div>
-                    <div>
                         total <span class="bright"
                             >{radarTotalPrecipitation} mm</span
                         >
@@ -588,13 +578,13 @@
         flex-shrink: 0;
     }
     .radar-section {
-        min-height: 8.5rem;
+        min-height: 7.75rem;
     }
     .radar-chart {
         display: grid;
         grid-template-columns: repeat(24, minmax(0, 1fr));
         gap: 0.25rem;
-        height: 5rem;
+        height: 4.25rem;
         align-items: end;
     }
     .slot {

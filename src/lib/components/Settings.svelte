@@ -722,6 +722,11 @@
                 </div>
                 <div class="checkbox-group">
                     <Checkbox bind:checked={settings.showClock}>clock</Checkbox>
+                    {#if settings.showClock}
+                        <Checkbox bind:checked={settings.showMotivationalQuote}
+                            >clock quote</Checkbox
+                        >
+                    {/if}
                     <Checkbox bind:checked={settings.showStats}>stats</Checkbox>
                     <Checkbox bind:checked={settings.showWeather}
                         >weather</Checkbox
